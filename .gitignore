@@ -1,5 +1,7 @@
 ref/**
 ref/**/*
+data/**
+data/**/*
 *.class
 
 # Package Files #
