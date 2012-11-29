@@ -6,8 +6,5 @@ package extractor;
  *
  */
 public class SIDER {
-
-	public class Feature {
-		;
-	}
+	
 }
