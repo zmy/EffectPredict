@@ -40,7 +40,16 @@ public class DrugBank {
 	public String getName(int idx) {
 		return drugList.get(idx).getName();
 	}
-	
+
+	/**
+	 * 
+	 * @param idx
+	 * @return
+	 */
+	public List<String> getSynonyms(int idx) {
+		return drugList.get(idx).getSynonyms().getSynonym();
+	}
+
 	/**
 	 * 
 	 * @param idx
@@ -53,10 +62,12 @@ public class DrugBank {
 	/**
 	 * 
 	 * @param name the drug name
-	 * @return corresponding index
+	 * @return corresponding index, -1 if not found
 	 */
 	public int searchName(String name) {
-		return name2idx.get(name);
+		if (name2idx.containsKey(name))
+			return name2idx.get(name);
+		else return -1;
 	}
 
 	/**
@@ -73,12 +84,14 @@ public class DrugBank {
 	}
 
 	/**
-	 * 
-	 * @param name the drug ID
-	 * @return corresponding index
+	 * There are some obsolete entries like DB01383 Insulin
+	 * @param id the drug ID
+	 * @return corresponding index, -1 if not found
 	 */
 	public int searchID(String id) {
-		return id2idx.get(id);
+		if (id2idx.containsKey(id))
+			return id2idx.get(id);
+		else return -1;
 	}
 
 	/**
@@ -107,8 +120,7 @@ public class DrugBank {
 	public List<String> getSubStructures(int idx) {
 		ArrayList<String> subs = new ArrayList<String>();
 		for (Substructure sub: drugList.get(idx).getTaxonomy().getSubstructures().getSubstructure())
-			subs.add(sub.getClazz()+"\t"+sub.getValue());
-		//TODO: is clazz info useful? true, false, unknown
+			subs.add(/*sub.getClazz()+"\t"+*/sub.getValue());
 		return subs;
 	}
 
@@ -138,7 +150,7 @@ public class DrugBank {
 	 * @param idx
 	 * @return
 	 */
-	public List<BondType> getTRansporters(int idx) {
+	public List<BondType> getTransporters(int idx) {
 		return drugList.get(idx).getTransporters().getTransporter();
 	}
 
@@ -149,6 +161,15 @@ public class DrugBank {
 	 */
 	public List<BondType> getEnzymes(int idx) {
 		return drugList.get(idx).getEnzymes().getEnzyme();
+	}
+
+	/**
+	 * 
+	 * @param idx
+	 * @return
+	 */
+	public List<BondType> getCarriers(int idx) {
+		return drugList.get(idx).getCarriers().getCarrier();
 	}
 
 	/**
@@ -183,5 +204,7 @@ public class DrugBank {
 			for (String id: getIDs(i))
 				id2idx.put(id, i);
 		}
+		//getSynonyms(idx)
+		//getBrands(idx)
 	}
 }
