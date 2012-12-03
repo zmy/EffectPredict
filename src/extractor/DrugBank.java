@@ -1,6 +1,7 @@
 package extractor;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,8 @@ import extractor.ca.drugbank.IdentifiersType.ExternalIdentifier;
  *
  */
 public class DrugBank {
+
+	static final String DATAFILE = "drugbank.xml";
 
 	Drugs drugs;
 	List<DrugType> drugList;
@@ -150,8 +153,32 @@ public class DrugBank {
 	 * @param idx
 	 * @return
 	 */
+	public List<BigInteger> getTargetsPartners(int idx) {
+		ArrayList<BigInteger> targetPartner = new ArrayList<BigInteger>();
+		for (TargetBondType bt: getTargets(idx))
+			targetPartner.add(bt.getPartner());
+		return targetPartner;
+	}
+
+	/**
+	 * 
+	 * @param idx
+	 * @return
+	 */
 	public List<BondType> getTransporters(int idx) {
 		return drugList.get(idx).getTransporters().getTransporter();
+	}
+
+	/**
+	 * 
+	 * @param idx
+	 * @return
+	 */
+	public List<BigInteger> getTransportersPartners(int idx) {
+		ArrayList<BigInteger> transporterPartner = new ArrayList<BigInteger>();
+		for (BondType bt: getTransporters(idx))
+			transporterPartner.add(bt.getPartner());
+		return transporterPartner;
 	}
 
 	/**
@@ -168,8 +195,32 @@ public class DrugBank {
 	 * @param idx
 	 * @return
 	 */
+	public List<BigInteger> getEnzymesPartners(int idx) {
+		ArrayList<BigInteger> enzymePartner = new ArrayList<BigInteger>();
+		for (BondType bt: getEnzymes(idx))
+			enzymePartner.add(bt.getPartner());
+		return enzymePartner;
+	}
+
+	/**
+	 * 
+	 * @param idx
+	 * @return
+	 */
 	public List<BondType> getCarriers(int idx) {
 		return drugList.get(idx).getCarriers().getCarrier();
+	}
+
+	/**
+	 * 
+	 * @param idx
+	 * @return
+	 */
+	public List<BigInteger> getCarriersPartners(int idx) {
+		ArrayList<BigInteger> carrierPartner = new ArrayList<BigInteger>();
+		for (BondType bt: getCarriers(idx))
+			carrierPartner.add(bt.getPartner());
+		return carrierPartner;
 	}
 
 	/**
@@ -194,7 +245,7 @@ public class DrugBank {
 	public DrugBank(String database) throws JAXBException {
 		JAXBContext context = JAXBContext.newInstance(Drugs.class);
 		Unmarshaller um = context.createUnmarshaller();
-		drugs = (Drugs) um.unmarshal(new File(database+"drugbank.xml"));
+		drugs = (Drugs) um.unmarshal(new File(database+DATAFILE));
 		drugList = drugs.getDrug();
 
 		name2idx = new HashMap<String, Integer>();

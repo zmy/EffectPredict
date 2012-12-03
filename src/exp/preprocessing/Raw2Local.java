@@ -8,7 +8,6 @@ import javax.xml.bind.JAXBException;
 import exp.*;
 import extractor.DrugBank;
 import extractor.KEGG;
-import extractor.ca.drugbank.BondType;
 import extractor.ca.drugbank.TargetBondType;
 
 /**
@@ -18,22 +17,27 @@ import extractor.ca.drugbank.TargetBondType;
  */
 public class Raw2Local {
 
-	static final String DRUGBANK = "data/DrugBank/";
+	static final String DRUGBANK_DIR = "data/DrugBank/";
+	static final String SIDER_DIR = "data/SIDER/";
+
+	static void matchDrugs() {
+		;
+	}
 
 	/**
-	 * @param args
-	 * @throws JAXBException 
+	 * 
+	 * @param drugbank
 	 * @throws IOException 
 	 */
-	public static void main(String[] args) throws JAXBException, IOException {
-		// TODO Auto-generated method stub
-		DrugBank drugbank = new DrugBank(DRUGBANK);
-		System.out.println("DrugBank contains "+drugbank.size()+" drugs.");
-
+	static void creatFeatures(DrugBank drugbank) throws IOException {
 		ArrayList<DrugFeature> features = new ArrayList<DrugFeature>();
 		Indexer substructures = new Indexer();
 		Indexer interactions = new Indexer();
 		Indexer pathways = new Indexer();
+		Indexer targets = new Indexer();
+		Indexer enzymes = new Indexer();
+		Indexer transporters  = new Indexer();
+		Indexer carriers = new Indexer();
 		for (int idx=0; idx<drugbank.size(); idx++) {
 			DrugFeature feature = new DrugFeature();
 			/* Substructures */
@@ -48,34 +52,28 @@ public class Raw2Local {
 			else
 				feature.addFeature(new ArrayList<String>(), pathways);
 			/* Targets, Enzymes, Transporters, Carriers */
-			for (TargetBondType bt: drugbank.getTargets(idx)) {
-				bt.getPartner();
-				//TODO: index this number
-				//TODO: external .csv files
-				bt.getActions().getAction();
-			}
-			for (BondType bt: drugbank.getEnzymes(idx)) {
-				bt.getPartner();
-				//TODO: index this number
-				//TODO: external .csv files
-				bt.getActions().getAction();
-			}
-			for (BondType bt: drugbank.getTransporters(idx)) {
-				bt.getPartner();
-				//TODO: index this number
-				//TODO: external .csv files
-				bt.getActions().getAction();
-			}
-			for (BondType bt: drugbank.getCarriers(idx)) {
-				bt.getPartner();
-				//TODO: index this number
-				//TODO: external .csv files
-				bt.getActions().getAction();
-			}
+			feature.addFeature(drugbank.getTargetsPartners(idx), targets);
+			feature.addFeature(drugbank.getEnzymesPartners(idx), enzymes);
+			feature.addFeature(drugbank.getTransportersPartners(idx), transporters);
+			feature.addFeature(drugbank.getCarriersPartners(idx), carriers);
 			//TODO: side effects
 
 			features.add(feature);
 		}
+		//TODO: check partners overlap? if so combine;
+	}
+
+	/**
+	 * @param args
+	 * @throws JAXBException 
+	 * @throws IOException 
+	 */
+	public static void main(String[] args) throws JAXBException, IOException {
+		DrugBank drugbank = new DrugBank(DRUGBANK_DIR);
+		System.out.println("DrugBank contains "+drugbank.size()+" drugs.");
+
+		matchDrugs();
+		creatFeatures(drugbank);
 
 		int idx = drugbank.searchName("Acebutolol"); //Levothyroxine
 		//System.out.println(drugbank.getSubStructures(idx));
@@ -84,7 +82,7 @@ public class Raw2Local {
 		//System.out.println(drugbank.getKEGGD(idx));
 		//System.out.println(KEGG.Parser.extractPathways(
 		//		KEGG.linkedEntries(KEGG.Database.PATHWAY, drugbank.getKEGGD(idx))));
-		
+
 		for (TargetBondType tbt: drugbank.getTargets(idx)) {
 			System.out.println();
 			System.out.println(tbt.getPartner());
@@ -94,6 +92,7 @@ public class Raw2Local {
 			//System.out.println(tbt.getKnownAction());
 			//System.out.println(tbt.getReferences());
 			System.out.println(tbt.getActions().getAction());
+			//TODO: how to use actions?
 		}
 	}
 
