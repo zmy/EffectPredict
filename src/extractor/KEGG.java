@@ -46,6 +46,22 @@ public class KEGG {
 			return name;
 		}
 	}
+	
+	static public enum RetrievalOption {
+		AASEQ	("aaseq"),
+		NTSEQ	("ntseq"),
+		MOL	("mol"),
+		KCF	("kcf"),
+		IMAGE	("image");
+
+		String name;
+		RetrievalOption(String name) {
+			this.name = name;
+		}
+		public String toString() {
+			return name;
+		}
+	}
 
 	static public class Parser {
 		static public List<String> extractPathways(String str) {
@@ -55,6 +71,18 @@ public class KEGG {
 			while (m.find())
 				pathways.add(m.group("path"));
 			return pathways;
+		}
+		
+		static public String extractUniProtIDs(String str) {
+			Pattern p = Pattern.compile("UniProt: (?<ids>.*)");
+			Matcher m = p.matcher(str);
+			String ret="";
+			if (m.find()) {
+				ret = m.group("ids");
+				System.out.println(ret);
+			}
+			else System.out.println("Not Found!");
+			return ret;
 		}
 	}
 
@@ -84,8 +112,12 @@ public class KEGG {
 		return "find";//TODO:
 	}
 
-	static public String dataRetrieval() {
-		return "get";//TODO:
+	static public String dataRetrieval(String dbentries) throws IOException {
+		return GET(KEGGREST+"get/"+dbentries);
+	}
+	
+	static public String dataRetrieval(String dbentries, RetrievalOption option) throws IOException {
+		return GET(KEGGREST+"get/"+dbentries+"/"+option);
 	}
 
 	static public String idConversion() {
