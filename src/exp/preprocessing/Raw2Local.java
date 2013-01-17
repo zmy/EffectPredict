@@ -8,6 +8,7 @@ import javax.xml.bind.JAXBException;
 import exp.*;
 import extractor.DrugBank;
 import extractor.KEGG;
+import extractor.SIDER;
 import extractor.ca.drugbank.TargetBondType;
 
 /**
@@ -71,11 +72,13 @@ public class Raw2Local {
 	public static void main(String[] args) throws JAXBException, IOException {
 		DrugBank drugbank = new DrugBank(DRUGBANK_DIR);
 		System.out.println("DrugBank contains "+drugbank.size()+" drugs.");
+		SIDER sider = new SIDER(SIDER_DIR);
 
 		matchDrugs();
-		creatFeatures(drugbank);
+		//creatFeatures(drugbank);
 
-		int idx = drugbank.searchName("Acebutolol"); //Levothyroxine
+		/* Following code is for experiments */
+		//int idx = drugbank.searchName("Acebutolol"); //Levothyroxine
 		//System.out.println(drugbank.getSubStructures(idx));
 		//System.out.println(drugbank.getInteractions(idx));
 
@@ -83,6 +86,7 @@ public class Raw2Local {
 		//System.out.println(KEGG.Parser.extractPathways(
 		//		KEGG.linkedEntries(KEGG.Database.PATHWAY, drugbank.getKEGGD(idx))));
 
+		/*
 		for (TargetBondType tbt: drugbank.getTargets(idx)) {
 			System.out.println();
 			System.out.println(tbt.getPartner());
@@ -94,6 +98,7 @@ public class Raw2Local {
 			System.out.println(tbt.getActions().getAction());
 			//TODO: how to use actions?
 		}
+		*/
 	}
 
 }
