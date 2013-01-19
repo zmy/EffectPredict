@@ -59,11 +59,6 @@ public class SIDER {
 			this.label = label;
 		}
 
-		/*public MappingInfo(final String genericNames, final String brandNames, final String marker,
-				final Integer flatCompound, final Integer stereoCompound, final String urlPDF,
-				final String label) {
-		}*/
-
 		public MappingInfo() {}
 	}
 
@@ -83,12 +78,6 @@ public class SIDER {
 		public void setSideName(String sideName) {
 			this.sideName = sideName;
 		}
-
-		/*public SIDEInfo(final String label, final String concept, final String sideName) {
-			this.label = label;
-			this.concept = concept;
-			this.sideName = sideName;
-		}*/
 
 		public SIDEInfo() {}
 	}
