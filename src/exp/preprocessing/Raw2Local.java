@@ -21,12 +21,15 @@ public class Raw2Local {
 	static final String DRUGBANK_DIR = "data/DrugBank/";
 	static final String SIDER_DIR = "data/SIDER/";
 
+	/**
+	 * Try to match drugs from different databases.
+	 */
 	static void matchDrugs() {
 		;
 	}
 
 	/**
-	 * 
+	 * Create feature vector of each drug.
 	 * @param drugbank
 	 * @throws IOException 
 	 */

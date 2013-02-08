@@ -19,15 +19,17 @@ import org.supercsv.prefs.CsvPreference;
  */
 public class SIDER {
 	static final String MAPPING_FILE = "label_mapping.tsv"; //Original file is wrong at line 30574: the first tab
-	static final String ADEFFECTS_FILE = "adverse_effects_raw.tsv";
-	static final String INDICATIONS_FILE = "indications_raw.tsv";
+	static final String RAW_ADEFFECTS_FILE = "adverse_effects_raw.tsv";
+	static final String RAW_INDICATIONS_FILE = "indications_raw.tsv";
+	static final String MED_ADEFFECTS_FILE = "meddra_adverse_effects.tsv";
+	static final String MED_FREQ_FILE = "meddra_freq_parsed.tsv";
 
 	public static class MappingInfo {
 		public String[] genericNames;
 		public String[] brandNames;
 		public String marker;
-		public Integer flatCompound;
-		public Integer stereoCompound;
+		public Integer flatCompoundID;
+		public Integer stereoCompoundID;
 		public String urlPDF;
 		public String label;
 
@@ -43,12 +45,12 @@ public class SIDER {
 			this.marker = marker;
 		}
 
-		public void setFlatCompound(Integer flatCompound) {
-			this.flatCompound = flatCompound;
+		public void setFlatCompoundID(Integer flatCompoundID) {
+			this.flatCompoundID = flatCompoundID;
 		}
 
-		public void setStereoCompound(Integer stereoCompound) {
-			this.stereoCompound = stereoCompound;
+		public void setStereoCompoundID(Integer stereoCompoundID) {
+			this.stereoCompoundID = stereoCompoundID;
 		}
 
 		public void setUrlPDF(String urlPDF) {
@@ -62,28 +64,73 @@ public class SIDER {
 		public MappingInfo() {}
 	}
 
-	public static class SIDEInfo {
+	public static class RawSIDEInfo {
 		public String label;
-		public String concept;
+		public String conceptID;
 		public String sideName;
 
 		public void setLabel(String label) {
 			this.label = label;
 		}
 
-		public void setConcept(String concept) {
-			this.concept = concept;
+		public void setConceptID(String conceptID) {
+			this.conceptID = conceptID;
 		}
 
 		public void setSideName(String sideName) {
 			this.sideName = sideName;
 		}
 
-		public SIDEInfo() {}
+		public RawSIDEInfo() {}
+	}
+
+	public static class MedSIDEInfo {
+		public Integer flatCompoundID;
+		public Integer stereoCompoundID;
+		public String conceptID;
+		public String drugName;
+		public String sideName;
+		public String medConceptType;
+		public String medConceptID;
+		public String medSideName;
+
+		public void setFlatCompoundID(Integer flatCompoundID) {
+			this.flatCompoundID = flatCompoundID;
+		}
+
+		public void setStereoCompoundID(Integer stereoCompoundID) {
+			this.stereoCompoundID = stereoCompoundID;
+		}
+
+		public void setConceptID(String conceptID) {
+			this.conceptID = conceptID;
+		}
+		public void setDrugName(String drugName) {
+			this.drugName = drugName;
+		}
+
+		public void setSideName(String sideName) {
+			this.sideName = sideName;
+		}
+
+		public void setMedConceptType(String medConceptType) {
+			this.medConceptType = medConceptType;
+		}
+
+		public void setMedConceptID(String medConceptID) {
+			this.medConceptID = medConceptID;
+		}
+
+		public void setMedSideName(String medSideName) {
+			this.medSideName = medSideName;
+		}
+
+		public MedSIDEInfo() {}
 	}
 
 	ArrayList<MappingInfo> mappings;
-	ArrayList<SIDEInfo> sides;
+	ArrayList<RawSIDEInfo> rawSides;
+	ArrayList<MedSIDEInfo> medSides;
 
 	CellProcessor[] getMappingProcessors() {
 		final CellProcessor[] processors = new CellProcessor[] {
@@ -114,7 +161,7 @@ public class SIDER {
 		return processors;
 	}
 
-	CellProcessor[] getSIDEProcessors() {
+	CellProcessor[] getRawSIDEProcessors() {
 		final CellProcessor[] processors = new CellProcessor[] {
 				//label identifier
 				new NotNull(),
@@ -126,9 +173,30 @@ public class SIDER {
 		return processors;
 	}
 
+	CellProcessor[] getMedSIDEProcessors() {
+		final CellProcessor[] processors = new CellProcessor[] {
+				//1 & 2: STITCH compound ids (flat/stereo, see above)
+				new ParseInt(),
+				new ParseInt(),
+				//3: UMLS concept id as it was found on the label
+				new NotNull(),
+				//4: drug name
+				new NotNull(),
+				//5: side effect name
+				new NotNull(),
+				//6: MedDRA concept type (LLT = lowest level term, PT = preferred term)
+				new NotNull(),
+				//7: UMLS concept id for MedDRA term
+				new NotNull(),
+				//8: MedDRA side effect	name
+				new NotNull()
+		};
+		return processors;
+	}
+
 	public SIDER(String database) throws IOException {
 		/* read mapping info */
-		String[] mappingHeader = {"genericNames", "brandNames", "marker", "flatCompound", "stereoCompound", "urlPDF", "label"};
+		String[] mappingHeader = {"genericNames", "brandNames", "marker", "flatCompoundID", "stereoCompoundID", "urlPDF", "label"};
 		CsvBeanReader reader = new CsvBeanReader(new FileReader(database+MAPPING_FILE), CsvPreference.TAB_PREFERENCE);
 		CellProcessor[] processors = getMappingProcessors();
 		MappingInfo mapping;
@@ -140,27 +208,43 @@ public class SIDER {
 		HashSet<Integer> compoundIDs1 = new HashSet<Integer>();
 		HashSet<Integer> compoundIDs2 = new HashSet<Integer>();
 		for (MappingInfo info: mappings) {
-			compoundIDs1.add(info.flatCompound);
-			compoundIDs2.add(info.stereoCompound);
+			compoundIDs1.add(info.flatCompoundID);
+			compoundIDs2.add(info.stereoCompoundID);
 		}
-		System.out.println("SIDER containts "+compoundIDs1.size()+" flatCs and "+compoundIDs2.size()+" stereos.");
+		System.out.println("SIDER mapping contains "+compoundIDs1.size()+" flatCs and "+compoundIDs2.size()+" stereos.");
 
-		/* read side effect info */
-		String[] SIDEHeader = {"label", "concept", "sideName"};
-		reader = new CsvBeanReader(new FileReader(database+ADEFFECTS_FILE), CsvPreference.TAB_PREFERENCE);
-		processors = getSIDEProcessors();
-		SIDEInfo side;
-		sides = new ArrayList<SIDEInfo>();
-		while ((side = reader.read(SIDEInfo.class, SIDEHeader, processors)) != null)
-			sides.add(side);
+		/* read raw side effect info */
+		String[] rawSIDEHeader = {"label", "conceptID", "sideName"};
+		reader = new CsvBeanReader(new FileReader(database+RAW_ADEFFECTS_FILE), CsvPreference.TAB_PREFERENCE);
+		processors = getRawSIDEProcessors();
+		RawSIDEInfo rawSide;
+		rawSides = new ArrayList<RawSIDEInfo>();
+		while ((rawSide = reader.read(RawSIDEInfo.class, rawSIDEHeader, processors)) != null)
+			rawSides.add(rawSide);
 		reader.close();
 
 		HashSet<String> drugLabels = new HashSet<String>();
 		HashSet<String> sideConcepts = new HashSet<String>();
-		for (SIDEInfo info: sides) {
+		for (RawSIDEInfo info: rawSides) {
 			drugLabels.add(info.label);
-			sideConcepts.add(info.concept);
+			sideConcepts.add(info.conceptID);
 		}
-		System.out.println("SIDER containts "+drugLabels.size()+" drugs and "+sideConcepts.size()+" sides.");
+		System.out.println("SIDER raw contains "+drugLabels.size()+" drugs and "+sideConcepts.size()+" sides.");
+
+		/* read meddra side effect info */
+		String[] medSIDEHeader = {"flatCompoundID", "stereoCompoundID", "conceptID", "drugName", "sideName", "medConceptType", "medConceptID", "medSideName"};
+		reader = new CsvBeanReader(new FileReader(database+MED_ADEFFECTS_FILE), CsvPreference.TAB_PREFERENCE);
+		processors = getMedSIDEProcessors();
+		MedSIDEInfo medSide;
+		medSides = new ArrayList<MedSIDEInfo>();
+		while ((medSide = reader.read(MedSIDEInfo.class, medSIDEHeader, processors)) != null)
+			medSides.add(medSide);
+		reader.close();
+
+		HashSet<String> drugNames = new HashSet<String>();
+		for (MedSIDEInfo info: medSides) {
+			drugNames.add(info.drugName);
+		}
+		System.out.println("SIDER med contains "+medSides.size()+" entries, and "+drugNames.size()+" drug names.");
 	}
 }
