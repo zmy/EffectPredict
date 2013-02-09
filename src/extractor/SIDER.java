@@ -131,7 +131,19 @@ public class SIDER {
 	ArrayList<MappingInfo> mappings;
 	ArrayList<RawSIDEInfo> rawSides;
 	ArrayList<MedSIDEInfo> medSides;
+	
+	public ArrayList<MappingInfo> getMappingInfos() {
+		return mappings;
+	}
+	
+	public ArrayList<RawSIDEInfo> getRawSIDEInfos() {
+		return rawSides;
+	}
 
+	public ArrayList<MedSIDEInfo> getMeddraSIDEInfos() {
+		return medSides;
+	}
+	
 	CellProcessor[] getMappingProcessors() {
 		final CellProcessor[] processors = new CellProcessor[] {
 				//1 & 2: generic and brand names

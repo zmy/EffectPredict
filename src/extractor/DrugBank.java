@@ -25,6 +25,8 @@ public class DrugBank {
 	List<DrugType> drugList;
 
 	HashMap<String, Integer> name2idx;
+	HashMap<String, Integer> synonyms2idx;
+	HashMap<Integer, Integer> pubChemCom2idx;
 	HashMap<String, Integer> id2idx;
 
 	/**
@@ -64,19 +66,8 @@ public class DrugBank {
 
 	/**
 	 * 
-	 * @param name the drug name
-	 * @return corresponding index, -1 if not found
-	 */
-	public int searchName(String name) {
-		if (name2idx.containsKey(name))
-			return name2idx.get(name);
-		else return -1;
-	}
-
-	/**
-	 * 
 	 * @param idx the index
-	 * @return drug IDs and Accession Numbers
+	 * @return drugbank IDs and Accession Numbers
 	 */
 	public List<String> getIDs(int idx) {
 		DrugType drug = drugList.get(idx);
@@ -84,17 +75,6 @@ public class DrugBank {
 		ids.add(drug.getDrugbankId());
 		ids.addAll(drug.getSecondaryAccessionNumbers().getSecondaryAccessionNumber());
 		return ids;
-	}
-
-	/**
-	 * There are some obsolete entries like DB01383 Insulin
-	 * @param id the drug ID
-	 * @return corresponding index, -1 if not found
-	 */
-	public int searchID(String id) {
-		if (id2idx.containsKey(id))
-			return id2idx.get(id);
-		else return -1;
 	}
 
 	/**
@@ -228,7 +208,7 @@ public class DrugBank {
 	 * @param idx
 	 * @return KEGG Number from External Identifiers
 	 */
-	public String getKEGGD(int idx) {
+	public String getKEGGDrug(int idx) {
 		for (ExternalIdentifier eid: drugList.get(idx).getExternalIdentifiers().getExternalIdentifier()) {
 			//System.out.println(eid.getResource()+"\t"+eid.getIdentifier());
 			if (eid.getResource().equalsIgnoreCase("KEGG Drug"))
@@ -239,6 +219,20 @@ public class DrugBank {
 
 	/**
 	 * 
+	 * @param idx
+	 * @return PubChem Compound from External Identifiers
+	 */
+	public Integer getPubChemCompound(int idx) {
+		for (ExternalIdentifier eid: drugList.get(idx).getExternalIdentifiers().getExternalIdentifier()) {
+			//System.out.println(eid.getResource()+"\t"+eid.getIdentifier());
+			if (eid.getResource().equalsIgnoreCase("PubChem Compound"))
+				return new Integer(eid.getIdentifier());
+		}
+		return null;
+	}
+
+	/**
+	 * Read DrugBank data into memory and build up dictionaries
 	 * @param database the directory of the drugbank database
 	 * @throws JAXBException
 	 */
@@ -249,13 +243,64 @@ public class DrugBank {
 		drugList = drugs.getDrug();
 
 		name2idx = new HashMap<String, Integer>();
+		synonyms2idx = new HashMap<String, Integer>();
+		pubChemCom2idx = new HashMap<Integer, Integer>();
 		id2idx = new HashMap<String, Integer>();
 		for (int i=0; i<size(); i++) {
-			name2idx.put(getName(i), i);
+			name2idx.put(getName(i).toLowerCase(), i);
+			for (String name: getSynonyms(i))
+				synonyms2idx.put(name.toLowerCase(), i);
+			Integer compound = getPubChemCompound(i);
+			if (compound != null)
+				pubChemCom2idx.put(compound, i);
 			for (String id: getIDs(i))
 				id2idx.put(id, i);
 		}
 		//getSynonyms(idx)
 		//getBrands(idx)
+	}
+
+	/**
+	 * 
+	 * @param name the drug name
+	 * @return corresponding index, -1 if not found
+	 */
+	public int searchName(String name) {
+		if (name2idx.containsKey(name.toLowerCase()))
+			return name2idx.get(name.toLowerCase());
+		else return -1;
+	}
+
+	/**
+	 * 
+	 * @param name the drug name
+	 * @return corresponding index, -1 if not found
+	 */
+	public int searchSynonyms(String name) {
+		if (synonyms2idx.containsKey(name.toLowerCase()))
+			return synonyms2idx.get(name.toLowerCase());
+		else return -1;
+	}
+
+	/**
+	 * 
+	 * @param compound the PubChem compound id
+	 * @return corresponding index, -1 if not found
+	 */
+	public int searchPubChem(int compound) {
+		if (pubChemCom2idx.containsKey(compound))
+			return pubChemCom2idx.get(compound);
+		else return -1;
+	}
+
+	/**
+	 * There are some obsolete entries like DB01383 Insulin
+	 * @param id the drugbank ID
+	 * @return corresponding index, -1 if not found
+	 */
+	public int searchID(String id) {
+		if (id2idx.containsKey(id))
+			return id2idx.get(id);
+		else return -1;
 	}
 }

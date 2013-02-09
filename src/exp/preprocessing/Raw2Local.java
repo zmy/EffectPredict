@@ -23,9 +23,23 @@ public class Raw2Local {
 
 	/**
 	 * Try to match drugs from different databases.
+	 * @param drugbank
+	 * @param sider
 	 */
-	static void matchDrugs() {
-		;
+	static void matchDrugs(DrugBank drugbank, SIDER sider) {
+		String last = null;
+		int failed = 0;
+		for (SIDER.MedSIDEInfo info: sider.getMeddraSIDEInfos()) 
+			if (!info.drugName.equals(last)) {
+				int idx0 = drugbank.searchName(info.drugName);
+				int idx1 = drugbank.searchSynonyms(info.drugName);
+				int idx2 = drugbank.searchPubChem(-info.stereoCompoundID);
+				System.out.println(info.drugName+" matched to "+idx0+" "+idx1+" "+idx2);
+				last = info.drugName;
+				if (idx0==-1 && idx1==-1 && idx2==-1)
+					failed++;
+			}
+		System.out.println(failed+" SIDER drugs failed to match.");
 	}
 
 	/**
@@ -49,9 +63,9 @@ public class Raw2Local {
 			/* Interactions */
 			feature.addFeature(drugbank.getInteractions(idx), interactions);
 			/* Pathways */
-			String KEGGD = drugbank.getKEGGD(idx);
+			String KEGGD = drugbank.getKEGGDrug(idx);
 			if (KEGGD != null)
-				feature.addFeature(KEGG.Parser.extractPathways(KEGG.linkedEntries(KEGG.Database.PATHWAY, drugbank.getKEGGD(idx)))
+				feature.addFeature(KEGG.Parser.extractPathways(KEGG.linkedEntries(KEGG.Database.PATHWAY, drugbank.getKEGGDrug(idx)))
 						, pathways);
 			else
 				feature.addFeature(new ArrayList<String>(), pathways);
@@ -77,7 +91,7 @@ public class Raw2Local {
 		System.out.println("DrugBank contains "+drugbank.size()+" drugs.");
 		SIDER sider = new SIDER(SIDER_DIR);
 
-		matchDrugs();
+		matchDrugs(drugbank, sider);
 		//creatFeatures(drugbank);
 
 		/* Following code is for experiments */
