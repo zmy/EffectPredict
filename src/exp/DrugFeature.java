@@ -31,15 +31,19 @@ public class DrugFeature {
 		length = 0;
 	}
 
+	public int length() {
+		length = 0;
+		for (Indexer indexer: indexers)
+			length += indexer.size();
+		return length;
+	}
+	
 	/**
 	 * After call this you should not modify indexers any more.
 	 * @return
 	 */
 	public boolean[] toBinary() {
-		length = 0;
-		for (Indexer indexer: indexers)
-			length += indexer.size();
-		boolean[] binary = new boolean[length];
+		boolean[] binary = new boolean[length()];
 		Arrays.fill(binary, false);
 		for (int i=0, st=0; i<idxs.size(); i++) {
 			for (Integer idx: idxs.get(i))
@@ -47,5 +51,14 @@ public class DrugFeature {
 			st += indexers.get(i).size();
 		}
 		return binary;
+	}
+	
+	public String toString() {
+		String str = "";
+		boolean[] binary = toBinary();
+		for (boolean val: binary)
+			if (val) str = str+"1";
+			else str = str+"0";
+		return str;
 	}
 }

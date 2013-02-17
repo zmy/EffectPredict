@@ -206,8 +206,14 @@ public class SIDER {
 		return processors;
 	}
 
+	/**
+	 * 
+	 * @param drugName
+	 * @return
+	 */
 	public ArrayList<String> getSIDE(String drugName) {
 		ArrayList<String> effects = new ArrayList<String>();
+		//TODO: quicker look up
 		for (MedSIDEInfo info: medSides)
 			if (info.drugName.equals(drugName)) {
 				effects.add(info.sideName);

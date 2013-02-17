@@ -1,5 +1,8 @@
 package exp.preprocessing;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,6 +23,7 @@ public class Raw2Local {
 
 	static final String DRUGBANK_DIR = "data/DrugBank/";
 	static final String SIDER_DIR = "data/SIDER/";
+	static final String FEATURE_FILE = "feature.txt";
 
 	static class UnifiedDrug {
 		int drugbankIdx;
@@ -105,6 +109,7 @@ public class Raw2Local {
 		for (UnifiedDrug uniDrug: uniDrugs) {
 			int idx = uniDrug.getDrugBank();
 			String name = uniDrug.getSIDER();
+			System.out.println(idx+"th drug in DrugBank and drug "+name+" in SIDER");
 			DrugFeature feature = new DrugFeature();
 			/* Substructures */
 			feature.addFeature(drugbank.getSubStructures(idx), substructures);
@@ -127,6 +132,15 @@ public class Raw2Local {
 			features.add(feature);
 		}
 		//TODO: check partners overlap? if so combine;
+		/* print features as binary vectors to a file */
+		System.out.println("Length of feature vector is "+features.get(0).length());
+		System.out.println("Last "+siders.size()+" bits are SIDE info.");
+		BufferedWriter writer = new BufferedWriter(new FileWriter(new File(FEATURE_FILE)));
+		for (DrugFeature feature: features) {
+			writer.write(feature.toString());
+			writer.newLine();
+		}
+		writer.close();
 	}
 
 	/**
