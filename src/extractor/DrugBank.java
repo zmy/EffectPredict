@@ -4,6 +4,7 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.xml.bind.*;
@@ -25,8 +26,8 @@ public class DrugBank {
 	List<DrugType> drugList;
 
 	HashMap<String, Integer> name2idx;
-	HashMap<String, Integer> synonyms2idx;
-	HashMap<Integer, Integer> pubChemCom2idx;
+	HashMap<String, HashSet<Integer>> synonyms2idx;
+	HashMap<Integer, HashSet<Integer>> pubChemCom2idx;
 	HashMap<String, Integer> id2idx;
 
 	/**
@@ -243,21 +244,37 @@ public class DrugBank {
 		drugList = drugs.getDrug();
 
 		name2idx = new HashMap<String, Integer>();
-		synonyms2idx = new HashMap<String, Integer>();
-		pubChemCom2idx = new HashMap<Integer, Integer>();
+		synonyms2idx = new HashMap<String, HashSet<Integer>>();
+		pubChemCom2idx = new HashMap<Integer, HashSet<Integer>>();
 		id2idx = new HashMap<String, Integer>();
 		for (int i=0; i<size(); i++) {
+			//if (name2idx.containsKey(getName(i).toLowerCase()))
+			//	System.out.println("Name conflict at "+i+"th drug.");
 			name2idx.put(getName(i).toLowerCase(), i);
-			for (String name: getSynonyms(i))
-				synonyms2idx.put(name.toLowerCase(), i);
+			for (String name: getSynonyms(i)) {
+				name = name.toLowerCase();
+				//if (synonyms2idx.containsKey(name) && synonyms2idx.get(name)!=i)
+				//	System.out.println("Synonyms "+name+" conflict at "+
+				//			getName(i)+" with "+getName(synonyms2idx.get(name)));
+				if (!synonyms2idx.containsKey(name))
+					synonyms2idx.put(name, new HashSet<Integer>());
+				synonyms2idx.get(name).add(i);
+			}
 			Integer compound = getPubChemCompound(i);
-			if (compound != null)
-				pubChemCom2idx.put(compound, i);
+			if (compound != null) {
+				//if (pubChemCom2idx.containsKey(compound))
+				//	System.out.println("PubChem Compound "+compound+" conflict at "+
+				//			getName(i)+" with "+getName(pubChemCom2idx.get(compound)));
+				if (!pubChemCom2idx.containsKey(compound))
+					pubChemCom2idx.put(compound, new HashSet<Integer>());
+				pubChemCom2idx.get(compound).add(i);
+			}
 			for (String id: getIDs(i))
 				id2idx.put(id, i);
 		}
 		//getSynonyms(idx)
 		//getBrands(idx)
+		System.out.println("DrugBank contains "+size()+" drugs.");
 	}
 
 	/**
@@ -276,10 +293,8 @@ public class DrugBank {
 	 * @param name the drug name
 	 * @return corresponding index, -1 if not found
 	 */
-	public int searchSynonyms(String name) {
-		if (synonyms2idx.containsKey(name.toLowerCase()))
-			return synonyms2idx.get(name.toLowerCase());
-		else return -1;
+	public HashSet<Integer> searchSynonyms(String name) {
+		return synonyms2idx.get(name.toLowerCase());
 	}
 
 	/**
@@ -287,10 +302,8 @@ public class DrugBank {
 	 * @param compound the PubChem compound id
 	 * @return corresponding index, -1 if not found
 	 */
-	public int searchPubChem(int compound) {
-		if (pubChemCom2idx.containsKey(compound))
-			return pubChemCom2idx.get(compound);
-		else return -1;
+	public HashSet<Integer> searchPubChem(int compound) {
+		return pubChemCom2idx.get(compound);
 	}
 
 	/**

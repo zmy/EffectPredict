@@ -131,11 +131,11 @@ public class SIDER {
 	ArrayList<MappingInfo> mappings;
 	ArrayList<RawSIDEInfo> rawSides;
 	ArrayList<MedSIDEInfo> medSides;
-	
+
 	public ArrayList<MappingInfo> getMappingInfos() {
 		return mappings;
 	}
-	
+
 	public ArrayList<RawSIDEInfo> getRawSIDEInfos() {
 		return rawSides;
 	}
@@ -143,7 +143,7 @@ public class SIDER {
 	public ArrayList<MedSIDEInfo> getMeddraSIDEInfos() {
 		return medSides;
 	}
-	
+
 	CellProcessor[] getMappingProcessors() {
 		final CellProcessor[] processors = new CellProcessor[] {
 				//1 & 2: generic and brand names
@@ -206,10 +206,23 @@ public class SIDER {
 		return processors;
 	}
 
-	public SIDER(String database) throws IOException {
-		/* read mapping info */
+	public ArrayList<String> getSIDE(String drugName) {
+		ArrayList<String> effects = new ArrayList<String>();
+		for (MedSIDEInfo info: medSides)
+			if (info.drugName.equals(drugName)) {
+				effects.add(info.sideName);
+			}
+		return effects;
+	}
+
+	/**
+	 * read mapping info
+	 * @param mappingFile
+	 * @throws IOException
+	 */
+	void readMappingInfo(String mappingFile) throws IOException {
 		String[] mappingHeader = {"genericNames", "brandNames", "marker", "flatCompoundID", "stereoCompoundID", "urlPDF", "label"};
-		CsvBeanReader reader = new CsvBeanReader(new FileReader(database+MAPPING_FILE), CsvPreference.TAB_PREFERENCE);
+		CsvBeanReader reader = new CsvBeanReader(new FileReader(mappingFile), CsvPreference.TAB_PREFERENCE);
 		CellProcessor[] processors = getMappingProcessors();
 		MappingInfo mapping;
 		mappings = new ArrayList<MappingInfo>();
@@ -224,11 +237,17 @@ public class SIDER {
 			compoundIDs2.add(info.stereoCompoundID);
 		}
 		System.out.println("SIDER mapping contains "+compoundIDs1.size()+" flatCs and "+compoundIDs2.size()+" stereos.");
+	}
 
-		/* read raw side effect info */
+	/**
+	 * read raw side effect info
+	 * @param rawSIDEFile
+	 * @throws IOException
+	 */
+	void readRawSIDEInfo(String rawSIDEFile) throws IOException {
 		String[] rawSIDEHeader = {"label", "conceptID", "sideName"};
-		reader = new CsvBeanReader(new FileReader(database+RAW_ADEFFECTS_FILE), CsvPreference.TAB_PREFERENCE);
-		processors = getRawSIDEProcessors();
+		CsvBeanReader reader = new CsvBeanReader(new FileReader(rawSIDEFile), CsvPreference.TAB_PREFERENCE);
+		CellProcessor[] processors = getRawSIDEProcessors();
 		RawSIDEInfo rawSide;
 		rawSides = new ArrayList<RawSIDEInfo>();
 		while ((rawSide = reader.read(RawSIDEInfo.class, rawSIDEHeader, processors)) != null)
@@ -242,11 +261,17 @@ public class SIDER {
 			sideConcepts.add(info.conceptID);
 		}
 		System.out.println("SIDER raw contains "+drugLabels.size()+" drugs and "+sideConcepts.size()+" sides.");
+	}
 
-		/* read meddra side effect info */
+	/**
+	 * read meddra side effect info
+	 * @param medSIDEFile
+	 * @throws IOException
+	 */
+	void readMedSIDEInfo(String medSIDEFile) throws IOException {
 		String[] medSIDEHeader = {"flatCompoundID", "stereoCompoundID", "conceptID", "drugName", "sideName", "medConceptType", "medConceptID", "medSideName"};
-		reader = new CsvBeanReader(new FileReader(database+MED_ADEFFECTS_FILE), CsvPreference.TAB_PREFERENCE);
-		processors = getMedSIDEProcessors();
+		CsvBeanReader reader = new CsvBeanReader(new FileReader(medSIDEFile), CsvPreference.TAB_PREFERENCE);
+		CellProcessor[] processors = getMedSIDEProcessors();
 		MedSIDEInfo medSide;
 		medSides = new ArrayList<MedSIDEInfo>();
 		while ((medSide = reader.read(MedSIDEInfo.class, medSIDEHeader, processors)) != null)
@@ -258,5 +283,11 @@ public class SIDER {
 			drugNames.add(info.drugName);
 		}
 		System.out.println("SIDER med contains "+medSides.size()+" entries, and "+drugNames.size()+" drug names.");
+	}
+
+	public SIDER(String database) throws IOException {
+		//readMappingInfo(database+MAPPING_FILE);
+		//readRawSIDEInfo(database+RAW_ADEFFECTS_FILE);
+		readMedSIDEInfo(database+MED_ADEFFECTS_FILE);
 	}
 }

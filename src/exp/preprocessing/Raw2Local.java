@@ -2,6 +2,7 @@ package exp.preprocessing;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import javax.xml.bind.JAXBException;
 
@@ -9,7 +10,6 @@ import exp.*;
 import extractor.DrugBank;
 import extractor.KEGG;
 import extractor.SIDER;
-import extractor.ca.drugbank.TargetBondType;
 
 /**
  * 
@@ -21,23 +21,68 @@ public class Raw2Local {
 	static final String DRUGBANK_DIR = "data/DrugBank/";
 	static final String SIDER_DIR = "data/SIDER/";
 
+	static class UnifiedDrug {
+		int drugbankIdx;
+		String siderDrugName;
+
+		public int getDrugBank() {
+			return drugbankIdx;
+		}
+
+		public String getSIDER() {
+			return siderDrugName;
+		}
+
+		public UnifiedDrug(int drugbankIdx, String siderDrugName) {
+			this.drugbankIdx = drugbankIdx;
+			this.siderDrugName = siderDrugName;
+		}
+	}
+
 	/**
 	 * Try to match drugs from different databases.
 	 * @param drugbank
 	 * @param sider
 	 */
-	static void matchDrugs(DrugBank drugbank, SIDER sider) {
+	static void matchDrugs(DrugBank drugbank, SIDER sider, ArrayList<UnifiedDrug> uniDrugs) {
 		String last = null;
 		int failed = 0;
 		for (SIDER.MedSIDEInfo info: sider.getMeddraSIDEInfos()) 
 			if (!info.drugName.equals(last)) {
 				int idx0 = drugbank.searchName(info.drugName);
-				int idx1 = drugbank.searchSynonyms(info.drugName);
-				int idx2 = drugbank.searchPubChem(-info.stereoCompoundID);
+				HashSet<Integer> idx1 = drugbank.searchSynonyms(info.drugName);
+				HashSet<Integer> idx2 = drugbank.searchPubChem(-info.stereoCompoundID);
 				System.out.println(info.drugName+" matched to "+idx0+" "+idx1+" "+idx2);
 				last = info.drugName;
-				if (idx0==-1 && idx1==-1 && idx2==-1)
-					failed++;
+				if (idx1==null && idx2==null)
+					if (idx0 == -1)
+						failed++;
+					else uniDrugs.add(new UnifiedDrug(idx0, info.drugName));
+				else {
+					HashSet<Integer> result;
+					if (idx1 == null) result = idx2;
+					else
+						if (idx2 == null) result = idx1;
+						else {
+							result = new HashSet<Integer>(idx1);
+							result.retainAll(idx2);
+						}
+					if (idx0 == -1)
+						if (result.size() > 1) {
+							System.out.println("Multiple Matches!");
+							failed++;
+						}
+						else
+							for (Integer idx: result) // there should be only one idx
+								uniDrugs.add(new UnifiedDrug(idx, info.drugName));
+					else
+						if (!result.contains(idx0)) {
+							System.out.println("Conflict Match!");
+							failed++;
+						}
+						else uniDrugs.add(new UnifiedDrug(idx0, info.drugName));
+				}
+
 			}
 		System.out.println(failed+" SIDER drugs failed to match.");
 	}
@@ -47,7 +92,7 @@ public class Raw2Local {
 	 * @param drugbank
 	 * @throws IOException 
 	 */
-	static void creatFeatures(DrugBank drugbank) throws IOException {
+	static void creatFeatures(DrugBank drugbank, SIDER sider, ArrayList<UnifiedDrug> uniDrugs) throws IOException {
 		ArrayList<DrugFeature> features = new ArrayList<DrugFeature>();
 		Indexer substructures = new Indexer();
 		Indexer interactions = new Indexer();
@@ -56,7 +101,10 @@ public class Raw2Local {
 		Indexer enzymes = new Indexer();
 		Indexer transporters  = new Indexer();
 		Indexer carriers = new Indexer();
-		for (int idx=0; idx<drugbank.size(); idx++) {
+		Indexer siders = new Indexer();
+		for (UnifiedDrug uniDrug: uniDrugs) {
+			int idx = uniDrug.getDrugBank();
+			String name = uniDrug.getSIDER();
 			DrugFeature feature = new DrugFeature();
 			/* Substructures */
 			feature.addFeature(drugbank.getSubStructures(idx), substructures);
@@ -74,8 +122,8 @@ public class Raw2Local {
 			feature.addFeature(drugbank.getEnzymesPartners(idx), enzymes);
 			feature.addFeature(drugbank.getTransportersPartners(idx), transporters);
 			feature.addFeature(drugbank.getCarriersPartners(idx), carriers);
-			//TODO: side effects
-
+			/* side effects */
+			feature.addFeature(sider.getSIDE(name), siders);
 			features.add(feature);
 		}
 		//TODO: check partners overlap? if so combine;
@@ -88,11 +136,12 @@ public class Raw2Local {
 	 */
 	public static void main(String[] args) throws JAXBException, IOException {
 		DrugBank drugbank = new DrugBank(DRUGBANK_DIR);
-		System.out.println("DrugBank contains "+drugbank.size()+" drugs.");
 		SIDER sider = new SIDER(SIDER_DIR);
 
-		matchDrugs(drugbank, sider);
-		//creatFeatures(drugbank);
+		ArrayList<UnifiedDrug> uniDrugs = new ArrayList<UnifiedDrug>();
+		matchDrugs(drugbank, sider, uniDrugs);
+
+		creatFeatures(drugbank, sider, uniDrugs);
 
 		/* Following code is for experiments */
 		//int idx = drugbank.searchName("Acebutolol"); //Levothyroxine
@@ -115,7 +164,7 @@ public class Raw2Local {
 			System.out.println(tbt.getActions().getAction());
 			//TODO: how to use actions?
 		}
-		*/
+		 */
 	}
 
 }
